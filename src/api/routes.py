@@ -23,12 +23,51 @@ def handle_hello():
 
     return jsonify(response_body), 200
 
+@api.route('/user', methods=['POST'])
+def create_user():
+
+    data= request.get_json()
+
+    if not data:
+        return jsonify({"msg": "no se proporcionaron datos"}), 400
+    
+    email= data.get("email")
+    password=data.get("password")
+    is_active=data.get("is_active", False)
+
+    existing_user= User.query.filter_by(email=email).first()
+    if existing_user:
+        return jsonify({"msg": "ya existe un usuario con ese email"}), 409
+    
+    new_user=User(
+        email=email,
+        password=password,
+        is_active=is_active
+    )
+    db.session.add(new_user)
+    
+    try:
+        db.session.commit()
+        return jsonify(new_user.serialize()), 201
+    
+    except Exception as e:
+        print(f"Error al obtener usuarios: {e}")
+        return jsonify({"msg": "Internal Server Error", "error": str(e)}), 500
+
 @api.route("/login", methods=["POST"])
 def login():
-    username = request.json.get("username", None)
-    password = request.json.get("password", None)
-    if username != "test" or password != "test":
-        return jsonify({"msg": "Bad username or password"}), 401
 
-    access_token = create_access_token(identity=username)
-    return jsonify(access_token=access_token)
+    data = request.get_json()
+    user=User.query.filter_by(email=data['email'].lower().first())
+
+    # username = request.json.get("username", None)
+    # password = request.json.get("password", None)
+    # if username != "test" or password != "test":
+    #     return jsonify({"msg": "Bad username or password"}), 401
+
+    access_token = create_access_token(identity=user.id)
+    return jsonify({
+        "token": access_token,
+        'message': 'logge in successfully',
+        'user': user.serialize()
+        }), 200
