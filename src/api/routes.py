@@ -7,6 +7,7 @@ from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
+from werkzeug.security import generate_password_hash, check_password_hash
 
 api = Blueprint('api', __name__)
 
@@ -23,42 +24,54 @@ def handle_hello():
 
     return jsonify(response_body), 200
 
-@api.route('/user', methods=['POST'])
+@api.route('/signup', methods=['POST'])
 def create_user():
 
     data= request.get_json()
 
     if not data:
-        return jsonify({"msg": "no se proporcionaron datos"}), 400
+        return jsonify({"msg": "data not teceived"}), 400
+    
+    hashed_password= generate_password_hash(data['password'])
     
     email= data.get("email")
     password=data.get("password")
-    is_active=data.get("is_active", False)
+    username=data.get("username")
+
+    required_fields = ["email", "password", "username"]
+
+    
 
     existing_user= User.query.filter_by(email=email).first()
     if existing_user:
-        return jsonify({"msg": "ya existe un usuario con ese email"}), 409
+        return jsonify({"msg": "user already exists with that email"}), 409
+    
+    if not all(data.get(field) for field in required_fields):
+        return jsonify({"msg": "missing required fields"}), 400
     
     new_user=User(
         email=email,
-        password=password,
-        is_active=is_active
+        password=hashed_password,
+        username=username
     )
     db.session.add(new_user)
     
     try:
         db.session.commit()
-        return jsonify(new_user.serialize()), 201
+        return jsonify({'msg': 'created user successfully'}), 201
     
     except Exception as e:
-        print(f"Error al obtener usuarios: {e}")
+        print(f"Error getting users: {e}")
         return jsonify({"msg": "Internal Server Error", "error": str(e)}), 500
 
 @api.route("/login", methods=["POST"])
 def login():
 
     data = request.get_json()
-    user=User.query.filter_by(email=data['email'].lower().first())
+    user=User.query.filter_by(email=data['email'].lower()).first()
+
+    if not user or check_password_hash(user.password, data['password']):
+        return jsonify({'msg': 'invalid email or password'}), 401
 
     # username = request.json.get("username", None)
     # password = request.json.get("password", None)
