@@ -30,7 +30,7 @@ def create_user():
     data= request.get_json()
 
     if not data:
-        return jsonify({"msg": "data not teceived"}), 400
+        return jsonify({"msg": "data not received"}), 400
     
     hashed_password= generate_password_hash(data['password'])
     
@@ -70,7 +70,7 @@ def login():
     data = request.get_json()
     user=User.query.filter_by(email=data['email'].lower()).first()
 
-    if not user or check_password_hash(user.password, data['password']):
+    if not user or not check_password_hash(user.password, data['password']):
         return jsonify({'msg': 'invalid email or password'}), 401
 
     # username = request.json.get("username", None)
@@ -81,6 +81,6 @@ def login():
     access_token = create_access_token(identity=user.id)
     return jsonify({
         "token": access_token,
-        'message': 'logge in successfully',
+        'message': 'logged in successfully',
         'user': user.serialize()
         }), 200
