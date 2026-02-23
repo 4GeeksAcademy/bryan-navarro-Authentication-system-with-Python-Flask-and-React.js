@@ -18,6 +18,11 @@ export const Navbar = () => {
 						<button className="btn btn-danger">SignUp</button>
 					</Link>
 				</div>
+				<div className="ml-auto">
+					<Link to="/signin">
+						<button className="btn btn-danger">SignIn</button>
+					</Link>
+				</div>
 			</div>
 		</nav>
 	);
